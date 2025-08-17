@@ -17,8 +17,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedChatId, onChatSelect }
   const { data, loading, refetch } = useQuery(GET_USER_CHATS, {
     variables: { user_id: user?.id || '' },
     skip: !user?.id,
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
+    pollInterval: 5000, // Poll every 5 seconds for updates
   });
 
   const [createChat, { loading: creatingChat }] = useMutation(CREATE_CHAT, {
@@ -77,10 +78,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedChatId, onChatSelect }
   const chats: Chat[] = data?.chats || [];
 
   // Debug logging
-  console.log('User ID:', user?.id);
-  console.log('Query data:', data);
-  console.log('Chats:', chats);
-  console.log('Loading:', loading);
+  console.log('Sidebar Debug - User ID:', user?.id);
+  console.log('Sidebar Debug - Query data:', data);
+  console.log('Sidebar Debug - Chats array:', chats);
+  console.log('Sidebar Debug - Loading:', loading);
+  console.log('Sidebar Debug - Chats length:', chats.length);
 
   return (
     <div className="w-80 bg-gray-900 text-white flex flex-col h-full">
@@ -131,7 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedChatId, onChatSelect }
                 <div className="flex items-start space-x-3">
                   <MessageSquare className="w-4 h-4 mt-1 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{getPreviewText(chat.messages)}</p>
+                    <p className="text-sm font-medium truncate">{getPreviewText(chat.messages || [])}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       {formatDate(chat.updated_at || chat.created_at)}
                     </p>

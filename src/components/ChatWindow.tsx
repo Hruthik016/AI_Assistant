@@ -149,6 +149,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, userId }) => {
       // 5. Refetch messages to get bot response
       const refetchResult = await refetch();
       console.log('Messages refetched:', refetchResult);
+      
+      // 6. Trigger sidebar refresh by refetching parent component
+      // This will be handled by polling in sidebar
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
