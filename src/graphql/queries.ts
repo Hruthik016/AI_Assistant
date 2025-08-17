@@ -2,7 +2,7 @@ import { gql } from '@apollo/client';
 
 // Create a new chat
 export const CREATE_CHAT = gql`
-  mutation CreateChat($user_id: uuid!) {
+  mutation CreateChat($user_id: String!) {
     insert_chats_one(object: { user_id: $user_id }) {
       id
       user_id
@@ -51,7 +51,7 @@ export const UPDATE_CHAT_TIMESTAMP = gql`
 
 // Get all chats for a user with messages
 export const GET_USER_CHATS = gql`
-  query GetUserChats($user_id: uuid!) {
+  query GetUserChats($user_id: String!) {
     chats(
       where: { user_id: { _eq: $user_id } }, 
       order_by: { updated_at: desc }
