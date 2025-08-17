@@ -18,15 +18,36 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, userId }) => {
   const { data, refetch } = useQuery(GET_CHAT_MESSAGES, {
     variables: { chat_id: chatId },
     skip: !chatId,
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 2000, // Poll every 2 seconds for new messages
+    fetchPolicy: 'network-only',
+    errorPolicy: 'all',
   });
 
-  const [insertMessage] = useMutation(INSERT_MESSAGE);
-  const [updateChatTimestamp] = useMutation(UPDATE_CHAT_TIMESTAMP);
-  const [sendMessageToBot] = useMutation(SEND_MESSAGE_TO_BOT);
+  const [insertMessage] = useMutation(INSERT_MESSAGE, {
+    onError: (error) => {
+      console.error('Error inserting message:', error);
+      console.error('GraphQL errors:', error.graphQLErrors);
+      console.error('Network error:', error.networkError);
+    }
+  });
+  
+  const [updateChatTimestamp] = useMutation(UPDATE_CHAT_TIMESTAMP, {
+    onError: (error) => {
+      console.error('Error updating chat timestamp:', error);
+    }
+  });
+  
+  const [sendMessageToBot] = useMutation(SEND_MESSAGE_TO_BOT, {
+    onError: (error) => {
+      console.error('Error sending message to bot:', error);
+    }
+  });
 
   const messages: Message[] = data?.messages || [];
+
+  // Debug logging
+  console.log('Chat ID:', chatId);
+  console.log('Messages data:', data);
+  console.log('Messages:', messages);
 
   useEffect(() => {
     scrollToBottom();
@@ -54,20 +75,26 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, userId }) => {
     setInputMessage('');
     setIsProcessing(true);
 
+    console.log('Sending message:', userMessage, 'to chat:', chatId);
+
     try {
       // 1. Insert user message
-      await insertMessage({
+      const userMessageResult = await insertMessage({
         variables: {
           chat_id: chatId,
           content: userMessage,
           sender_type: 'user',
         },
       });
+      
+      console.log('User message inserted:', userMessageResult);
 
       // 2. Update chat timestamp
-      await updateChatTimestamp({ 
+      const timestampResult = await updateChatTimestamp({ 
         variables: { chat_id: chatId } 
       });
+      
+      console.log('Chat timestamp updated:', timestampResult);
 
       // 3. Send message to bot
       const botResult = await sendMessageToBot({
@@ -88,26 +115,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, userId }) => {
           ? responseMessage[0]?.message || 'No message received'
           : responseMessage.message || responseMessage;
 
-        await insertMessage({
+        const botMessageResult = await insertMessage({
           variables: {
             chat_id: chatId,
             content: botMessage,
             sender_type: 'bot',
           },
         });
+        
+        console.log('Bot message inserted:', botMessageResult);
       } else {
         // If bot request failed, show error message as bot response
         const errorMessage = botResult.data?.sendMessageToBot?.message 
           ? JSON.stringify(botResult.data.sendMessageToBot.message, null, 2)
           : 'Sorry, I encountered an error processing your message.';
         
-        await insertMessage({
+        const errorMessageResult = await insertMessage({
           variables: {
             chat_id: chatId,
             content: errorMessage,
             sender_type: 'bot',
           },
         });
+        
+        console.log('Error message inserted:', errorMessageResult);
       }
 
       // 4. Update chat timestamp again
@@ -116,7 +147,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, userId }) => {
       });
 
       // 5. Refetch messages to get bot response
-      await refetch();
+      const refetchResult = await refetch();
+      console.log('Messages refetched:', refetchResult);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {

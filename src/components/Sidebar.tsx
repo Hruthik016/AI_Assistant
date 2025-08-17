@@ -17,7 +17,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedChatId, onChatSelect }
   const { data, loading, refetch } = useQuery(GET_USER_CHATS, {
     variables: { user_id: user?.id || '' },
     skip: !user?.id,
-    fetchPolicy: 'cache-and-network',
+    fetchPolicy: 'network-only',
+    errorPolicy: 'all',
   });
 
   const [createChat, { loading: creatingChat }] = useMutation(CREATE_CHAT, {
@@ -29,6 +30,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedChatId, onChatSelect }
     },
     onError: (error) => {
       console.error('Error creating chat:', error);
+      console.error('GraphQL errors:', error.graphQLErrors);
+      console.error('Network error:', error.networkError);
     }
   });
 
@@ -37,6 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedChatId, onChatSelect }
       console.error('User ID not available');
       return;
     }
+
+    console.log('Creating chat for user:', user.id);
 
     try {
       await createChat({
@@ -70,6 +75,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedChatId, onChatSelect }
   };
 
   const chats: Chat[] = data?.chats || [];
+
+  // Debug logging
+  console.log('User ID:', user?.id);
+  console.log('Query data:', data);
+  console.log('Chats:', chats);
+  console.log('Loading:', loading);
 
   return (
     <div className="w-80 bg-gray-900 text-white flex flex-col h-full">
