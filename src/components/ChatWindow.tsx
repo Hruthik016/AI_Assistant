@@ -7,9 +7,10 @@ import { Message } from '../types';
 interface ChatWindowProps {
   chatId: string | null;
   userId: string;
+  onMessageSent?: () => void;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, userId }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, userId, onMessageSent }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
@@ -18,8 +19,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, userId }) => {
   const { data, refetch } = useQuery(GET_CHAT_MESSAGES, {
     variables: { chat_id: chatId },
     skip: !chatId,
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
+    pollInterval: 2000, // Poll every 2 seconds for updates
   });
 
   const [insertMessage] = useMutation(INSERT_MESSAGE, {
@@ -150,8 +152,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, userId }) => {
       const refetchResult = await refetch();
       console.log('Messages refetched:', refetchResult);
       
-      // 6. Trigger sidebar refresh by refetching parent component
-      // This will be handled by polling in sidebar
+      // 6. Trigger sidebar refresh
+      if (onMessageSent) {
+        onMessageSent();
+      }
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {

@@ -8,20 +8,27 @@ import { CREATE_CHAT, GET_USER_CHATS } from '../graphql/queries';
 interface SidebarProps {
   selectedChatId: string | null;
   onChatSelect: (chatId: string) => void;
+  refreshTrigger?: number;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ selectedChatId, onChatSelect }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ selectedChatId, onChatSelect, refreshTrigger }) => {
   const user = useUserData();
   const { signOut } = useSignOut();
 
   const { data, loading, refetch } = useQuery(GET_USER_CHATS, {
     variables: { user_id: user?.id || '' },
     skip: !user?.id,
-    fetchPolicy: 'cache-and-network',
+    fetchPolicy: 'network-only',
     errorPolicy: 'all',
-    pollInterval: 5000, // Poll every 5 seconds for updates
+    pollInterval: 2000, // Poll every 2 seconds for updates
   });
 
+  // Refetch when refreshTrigger changes
+  React.useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      refetch();
+    }
+  }, [refreshTrigger, refetch]);
   const [createChat, { loading: creatingChat }] = useMutation(CREATE_CHAT, {
     onCompleted: (data) => {
       if (data.insert_chats_one) {

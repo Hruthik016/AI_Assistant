@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { useUserData } from '@nhost/react';
+import { useQuery } from '@apollo/client';
 import { Sidebar } from './Sidebar';
 import { ChatWindow } from './ChatWindow';
+import { GET_USER_CHATS } from '../graphql/queries';
 
 export const ChatApp: React.FC = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const user = useUserData();
+
+  // Force refresh function that can be passed down to components
+  const forceRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   if (!user) {
     return (
@@ -20,10 +28,12 @@ export const ChatApp: React.FC = () => {
       <Sidebar 
         selectedChatId={selectedChatId}
         onChatSelect={setSelectedChatId}
+        refreshTrigger={refreshTrigger}
       />
       <ChatWindow 
         chatId={selectedChatId}
         userId={user.id}
+        onMessageSent={forceRefresh}
       />
     </div>
   );
